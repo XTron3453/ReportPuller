@@ -105,7 +105,6 @@ class App2(QMainWindow):
         filename = " "
 
         directory = os.listdir(os.getcwd())
-        print(directory)
 
         for file in directory:
             if file.find("care_logs") > -1:
@@ -126,6 +125,9 @@ class App2(QMainWindow):
         data2019 = pd.read_csv("ADL data 2019.csv")
         careLogs = pd.read_excel(filename)
 
+        print(data2018.columns.tolist())
+        print(data2019.columns.tolist())
+
         names2018 = sorted(set(data2018['ClientNames']))
         names2019 = sorted(set(data2019['ClientNames']))
         namesCare = sorted(set(careLogs['Client Name']), reverse=True)
@@ -139,20 +141,40 @@ class App2(QMainWindow):
             frontName = name.split(" ")
             backName = frontName[1] + ", " + frontName[0]
 
+            startDateExists = False
             startDateOff = None
+            endDateOff = None
+            authorizedAmountOff = None
 
             sheet1.write(iterator, 0, backName)
             print(name, " / ", backName)
 
             for row in dfCare.itertuples():
                 if name == row[1]:
-                    try:
+                    if not(pd.isnull(row[5])) and startDateExists == True:
+                        newDate = datetime.datetime.strptime(str(row[5]), "%Y-%m-%d %H:%M:%S")
+                        if startDateOff < newDate:
+                            startDateOff = newDate
+                            endDateOff = datetime.datetime.strptime(str(row[6]), "%Y-%m-%d %H:%M:%S")
+                            authorizedAmountOff = row[3]
+
+                    if not(pd.isnull(row[5])) and startDateExists == False:
                         startDateOff = datetime.datetime.strptime(str(row[5]), "%Y-%m-%d %H:%M:%S")
-                    except: 
-                        startDateOff = datetime.datetime(2000, 6, 7)
+                        endDateOff = datetime.datetime.strptime(str(row[6]), "%Y-%m-%d %H:%M:%S")
+                        authorizedAmountOff = row[3]
+                        startDateExists = True
 
-                    adder = adder + float(row[2])
 
+            if startDateExists == False:        
+                startDateOff = datetime.datetime(2000, 6, 7)
+                endDateOff = datetime.datetime.now()
+                authorizedAmountOff = 0
+
+            for row in dfCare.itertuples():
+                if name == row[1]:
+                    if not(pd.isnull(row[5])) and startDateOff == datetime.datetime.strptime(str(row[5]), "%Y-%m-%d %H:%M:%S"):
+                        if not(pd.isnull(row[2])):
+                            adder = adder + float(row[2])
 
             for row in df2018.itertuples():
                 if backName == row[1]:
@@ -163,31 +185,25 @@ class App2(QMainWindow):
             for row in df2019.itertuples():
                 if backName == row[1]:
                     if startDateOff < datetime.datetime.strptime(row[3], "%m/%d/%Y %H:%M"):
+                        print(startDateOff, " ", row[3])
                         adder = adder + float(row[22])
 
-            for row in dfCare.itertuples():
-                if name == row[1]:
-                    print(row[1], " " , row[3], " ", iterator + 1)
-                    endDate = row[6]
-                    currentDate = datetime.datetime.now()
-                    startDate = row[5]
-                    weeksLeft = ((endDate - currentDate).days) / 7
-                    weeksTotal = ((endDate - startDate).days) / 7
+            currentDate = datetime.datetime.now()
+            weeksLeft = ((endDateOff - currentDate).days) / 7
+            weeksTotal = ((endDateOff - startDateOff).days) / 7
 
-                    authorizedHours = weeksTotal * row[3]
-                    hoursPerWeekInAuthorization = authorizedHours / weeksTotal
+            authorizedHours = weeksTotal * authorizedAmountOff
+            hoursPerWeekInAuthorization = authorizedHours / weeksTotal
 
-                    print(authorizedHours)
-                    if weeksLeft == 0:
-                        hoursLeftPerWeek = 0
-                    else:
-                        hoursLeftPerWeek = (authorizedHours - adder) / weeksLeft
-                    if(math.isnan(authorizedHours)):
-                        authorizedHours = 0
-                        hoursLeftPerWeek = 0
-                        weeksLeft = 0
-                        hoursPerWeekInAuthorization = 0
-                    break
+            if weeksLeft == 0:
+                hoursLeftPerWeek = 0
+            else:
+                hoursLeftPerWeek = (authorizedHours - adder) / weeksLeft
+            if authorizedHours == 0:
+                authorizedHours = 0
+                hoursLeftPerWeek = 0
+                weeksLeft = 0
+                hoursPerWeekInAuthorization = 0
 #Calculation
             sheet1.write(iterator, 1, adder)
             sheet1.write(iterator, 2, authorizedHours)
@@ -270,6 +286,3 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = App()
     app.exec_()
-
-
-
