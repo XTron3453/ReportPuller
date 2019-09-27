@@ -19,8 +19,8 @@ import time
 
 now = datetime.datetime.now()
 
-username = "kens@goldmedalhomehealth.com"
-password = "Ken123"
+username = ""
+password = ""
 #Need to move out
 
 class App2(QMainWindow):
