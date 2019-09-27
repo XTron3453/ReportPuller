@@ -19,8 +19,8 @@ import time
 
 now = datetime.datetime.now()
 
-username = ""
-password = ""
+username = "kens@goldmedalhomehealth.com"
+password = "Ken123"
 #Need to move out
 
 class App2(QMainWindow):
@@ -172,9 +172,8 @@ class App2(QMainWindow):
 
             for row in dfCare.itertuples():
                 if name == row[1]:
-                    if not(pd.isnull(row[5])) and startDateOff == datetime.datetime.strptime(str(row[5]), "%Y-%m-%d %H:%M:%S"):
-                        if not(pd.isnull(row[2])):
-                            adder = adder + float(row[2])
+                    if startDateOff <= datetime.datetime.strptime(str(row[7]), "%Y-%m-%d %H:%M:%S"):
+                        adder = adder + float(row[2])
 
             for row in df2018.itertuples():
                 if backName == row[1]:
